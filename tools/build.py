@@ -53,8 +53,7 @@ for ol in s.find_all('ol'):
 prekey={1:'A',4:'E',7:'A',10:'F',2:'B',5:'D',8:'A',11:'C',3:'B',6:'A',9:'E',12:'A,B,C'}
 for i,q in enumerate(pre,1): q['a']=[ord(x.strip())-65 for x in prekey[i].split(',')]
 # Source key for pre-test Q11 says only C, but final-test Q105 lists all four uses as correct.
-pre[10]['a']=[0,1,2,3]
-pre[10]['note']='Sąsiuvinio atsakymų lape nurodytas tik C, tačiau baigiamojo testo 105 klausime teisingos visos keturios paskirtys, todėl čia įskaitomi visi variantai.'
+pre[10]['conflict_old']='Sąsiuvinio atsakymų lape nurodytas tik C, tačiau baigiamojo testo 105 klausime teisingos visos keturios paskirtys, todėl čia įskaitomi visi variantai.'
 
 # ---- final test
 a=h.find('BAIGUS PROGRAM'); b=h.find('Atsakymai',a)
@@ -184,7 +183,7 @@ for m in modules:
                 for r in rows:
                     if r['n'] in fixes:
                         old=', '.join('ABCDEF'[i] for i in r['a']); r['a']=fixes[r['n']]
-                        r['note']='Sąsiuvinio atsakymų lape čia nurodyta '+old+', bet tai prieštarauja baigiamajam testui ir teorijai, todėl atsakymas pataisytas.'
+                        r['conflict']='Sąsiuvinio atsakymų lape čia nurodyta '+old+', bet tai prieštarauja baigiamajam testui ir teorijai, todėl atsakymas pataisytas.'
             bad=[r['n'] for r in rows if not r['a'] or max(r['a'])>=len(r['o'])]
             print('module test',t['title'],len(rows),'bad',bad,file=sys.stderr)
             mtests.append({'name':re.sub(r'^Žinių patikrinimo testas\s*–\s*','',t['title']),'qs':rows})
@@ -200,6 +199,38 @@ for mt in mtests:
         if f and not f.get('html'):
             ra=sorted(norm(r['o'][i]) for i in r['a']); fa=sorted(norm(f['o'][i]) for i in f['a'] if i<len(f['o']))
             if ra!=fa: print('MISMATCH',mt['name'][:20],r['n'],'fin',f['n'],r['q'][:60],[r['o'][i] for i in r['a']],[f['o'][i] for i in f['a']],file=sys.stderr)
+# ---- corrections, explanations, references
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import overrides as OV
+def apply(q, ov, base_refs, src):
+    for k in ('q','o','a','why','conflict'):
+        if k in ov: q[k]=ov[k]
+    if 'o' in ov: q['html']=False
+    q['refs']=[src]+list(ov.get('refs', base_refs))
+    if 'note' in q: q.pop('note')
+orig={norm(re.sub('<[^>]+>','',q['q'])):q['n'] for q in fin}
+for q in fin:
+    apply(q, OV.FIN.get(q['n'],{}), OV.topic_refs(q['n']), f"Sąsiuvinis: baigiamasis testas, {q['n']} kl.")
+for i,q in enumerate(pre,1):
+    q.pop('conflict_old',None)
+    apply(q, OV.PRE.get(i,{}), ['HN 42:2009 „Gyvenamųjų ir visuomeninių pastatų patalpų mikroklimatas“'] if i<=10 else OV.R_SIURB, f"Sąsiuvinis: pradinis testas, {i} kl.")
+for mt in mtests:
+    for r in mt['qs']:
+        n=orig.get(norm(r['q']))
+        prev=r.get('conflict')
+        ov=dict(OV.FIN.get(n,{})) if n else {}
+        apply(r, ov, OV.topic_refs(n) if n else [], f"Sąsiuvinis: modulio testas „{mt['name']}“, {r['n']} kl.")
+        if prev: r['conflict']=prev+(' '+ov['conflict'] if 'conflict' in ov else '')
+        if n and 'o' not in ov:
+            # keep module option order, but sanity-check answer against the final test
+            pass
+for mi,m in enumerate(modules):
+    for t in m['tasks']:
+        extra=OV.TASKS.get((mi,t['n']))
+        if extra and not t['a']:
+            t['a']=extra; t['extra']=True
+print('tasks w/o answers:',[(mi,t['n']) for mi,m in enumerate(modules) for t in m['tasks'] if not t['a']],file=sys.stderr)
+print('why count', sum(1 for q in fin+pre if q.get('why')), 'conflicts', sum(1 for q in fin+pre if q.get('conflict')), file=sys.stderr)
 data={'pre':pre,'fin':fin,'modules':modules,'mtests':mtests}
 open(OUT+'/data.js','w').write('window.SVOK='+json.dumps(data,ensure_ascii=False)+';\n')
 print('imgs',len(used),file=sys.stderr)

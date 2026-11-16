@@ -13,10 +13,11 @@ function fmtTime(s){var m=Math.floor(s/60),x=s%60;return m+':'+(x<10?'0':'')+x}
 function letters(a){return a.map(function(j){return L[j]}).join(', ')}
 
 /* ---------- question bank ---------- */
-function mk(id,n,q,o,a,html,note,src){return{id:id,n:n,q:/^</.test(q)?q:'<p>'+esc(q)+'</p>',o:o.map(function(x){return html?x:esc(x)}),a:a,note:note,src:src}}
-var PRE=D.pre.map(function(q,i){return mk('p:'+i,i+1,q.q,q.o,q.a,false,q.note,'Pradinis testas, '+(i+1)+' kl.')});
-var FIN=D.fin.map(function(q){return mk('f:'+q.n,q.n,q.q,q.o,q.a,q.html,q.note,'Baigiamasis testas, '+q.n+' kl.')});
-var MT=(D.mtests||[]).map(function(t,ti){return{name:t.name,qs:t.qs.map(function(q){return mk('m'+ti+':'+q.n,q.n,q.q,q.o,q.a,false,q.note,'Modulio testas „'+t.name+'“, '+q.n+' kl.')})}});
+function mk(id,n,r,src){return{id:id,n:n,q:/^</.test(r.q)?r.q:'<p>'+esc(r.q)+'</p>',o:r.o.map(function(x){return r.html?x:esc(x)}),a:r.a,conflict:r.conflict,why:r.why,refs:r.refs||[],src:src}}
+function extras(q,open){return (q.conflict?'<div class="conflict"><b>⚠ Sąsiuvinio atsakymas patikslintas.</b> '+esc(q.conflict)+'</div>':'')+(q.why?'<div class="why"><b>💡 Kodėl?</b> '+esc(q.why)+'</div>':'')+(q.refs&&q.refs.length?'<details class="refs"'+(open?' open':'')+'><summary>📚 Šaltiniai ('+q.refs.length+')</summary><ul>'+q.refs.map(function(r){return '<li>'+esc(r)+'</li>'}).join('')+'</ul></details>':'')}
+var PRE=D.pre.map(function(q,i){return mk('p:'+i,i+1,q,'Pradinis testas, '+(i+1)+' kl.')});
+var FIN=D.fin.map(function(q){return mk('f:'+q.n,q.n,q,'Baigiamasis testas, '+q.n+' kl.')});
+var MT=(D.mtests||[]).map(function(t,ti){return{name:t.name,qs:t.qs.map(function(q){return mk('m'+ti+':'+q.n,q.n,q,'Modulio testas „'+t.name+'“, '+q.n+' kl.')})}});
 var ALL=PRE.concat(FIN);MT.forEach(function(t){ALL=ALL.concat(t.qs)});
 var BYID={};ALL.forEach(function(q){BYID[q.id]=q});
 function range(a,b){return FIN.filter(function(q){return q.n>=a&&q.n<=b})}
@@ -148,7 +149,7 @@ function startQuiz(kind,resume){
       var w=wrong(); if(ok){st.score++; if(kind==='klaidos')delete w[q.id]} else w[q.id]=1; store('wrong',w);
       var s=store('stats')||{runs:0,answered:0,correct:0};s.answered++;if(ok)s.correct++;store('stats',s);
       st.log.push({id:q.id,sel:sel.slice(),ok:ok}); st.i++; save();
-      document.getElementById('fb').innerHTML='<div class="fb '+(ok?'ok':'bad')+'">'+(ok?'Teisingai!':'Neteisingai. Teisingas atsakymas: '+letters(q.a))+'</div>'+(q.note?'<div class="note">ℹ '+esc(q.note)+'</div>':'');
+      document.getElementById('fb').innerHTML='<div class="fb '+(ok?'ok':'bad')+'">'+(ok?'Teisingai!':'Neteisingai. Teisingas atsakymas: '+letters(q.a))+'</div>'+extras(q);
       go.disabled=false; go.textContent=st.i<st.ids.length?'Kitas klausimas →':'Rezultatai'; go.focus({preventScroll:true});
     }
   }
@@ -164,7 +165,7 @@ function startQuiz(kind,resume){
     var bad=st.log.filter(function(x){return!x.ok});
     app.innerHTML='<span class="chip">'+esc(st.title)+'</span><div class="card result" style="margin-top:12px"><div class="stat">Rezultatas'+(full?'':' (atsakyta '+n+' iš '+st.ids.length+')')+'</div><div class="big '+(pct>=80?'good':pct>=60?'mid':'low')+'">'+pct+'%</div><div>'+st.score+' iš '+n+' teisingai'+(def.timer?' per '+fmtTime(st.el):'')+'. '+(pct>=80?'Puikiai pasiruošęs!':pct>=60?'Neblogai, pakartok klaidas.':'Dar reikia pasimokyti.')+'</div>'+
     '<div class="row" style="margin-top:14px"><a class="btn" href="#/testas/'+kind+'?'+Date.now()+'">Kartoti</a>'+(bad.length?'<a class="btn ghost" href="#/testas/klaidos?'+Date.now()+'">Kartoti klaidas</a>':'')+'<a class="btn ghost" href="#/testai">Kiti testai</a></div></div>'+
-    (bad.length?'<h2>Klaidų peržiūra ('+bad.length+')</h2>'+bad.map(function(x){var q=BYID[x.id];return '<div class="review"><div class="content">'+q.q+'</div><ol class="ropts">'+q.o.map(function(o,j){var c=q.a.indexOf(j)>=0?'right':x.sel.indexOf(j)>=0?'your':'';return '<li class="'+c+'"><b>'+L[j]+'.</b> <span class="content">'+o+'</span>'+(c==='right'?' ✓':c==='your'?' ✗':'')+'</li>'}).join('')+'</ol>'+(q.note?'<div class="note">ℹ '+esc(q.note)+'</div>':'')+'</div>'}).join(''):'');
+    (bad.length?'<h2>Klaidų peržiūra ('+bad.length+')</h2>'+bad.map(function(x){var q=BYID[x.id];return '<div class="review"><div class="content">'+q.q+'</div><ol class="ropts">'+q.o.map(function(o,j){var c=q.a.indexOf(j)>=0?'right':x.sel.indexOf(j)>=0?'your':'';return '<li class="'+c+'"><b>'+L[j]+'.</b> <span class="content">'+o+'</span>'+(c==='right'?' ✓':c==='your'?' ✗':'')+'</li>'}).join('')+'</ol>'+extras(q)+'</div>'}).join(''):'');
     wrapTables(app); window.scrollTo(0,0);
   }
   if(def.timer){timerId=setInterval(function(){var t=document.getElementById('tm');if(t)t.textContent=fmtTime(elapsed());else clearInterval(timerId)},1000)}
@@ -174,14 +175,15 @@ function startQuiz(kind,resume){
 function studyPage(){
   setNav('mokytis');
   var groups=[{name:'Pradinis testas',qs:PRE},{name:'Baigiamasis testas',qs:FIN}].concat(MT.map(function(t){return{name:'Modulio testas: '+t.name,qs:t.qs}}));
-  app.innerHTML='<h1>Mokytis</h1><p class="muted">Visi klausimai su pažymėtais teisingais atsakymais. Įrašyk žodį, kad greitai rastum klausimą.</p>'+
-  '<div class="searchbar"><input type="search" id="q" placeholder="Ieškoti, pvz. radiatorius, ortakis, slėgis…" autocomplete="off"><label class="chk"><input type="checkbox" id="hide"> Slėpti atsakymus</label></div><p class="stat" id="cnt"></p><div id="list"></div>';
+  app.innerHTML='<h1>Mokytis</h1><p class="muted">Visi klausimai su teisingais atsakymais, paaiškinimais 💡 ir šaltiniais 📚. Ženklu ⚠ pažymėti klausimai, kuriuose sąsiuvinio atsakymas prieštarauja realiems techniniams reikalavimams. Jie patikslinti.</p>'+
+  '<div class="searchbar"><input type="search" id="q" placeholder="Ieškoti, pvz. radiatorius, ortakis, slėgis…" autocomplete="off"><label class="chk"><input type="checkbox" id="hide"> Slėpti atsakymus</label><label class="chk"><input type="checkbox" id="onlyc"> Tik patikslinti ⚠</label></div><p class="stat" id="cnt"></p><div id="list"></div>';
   var list=document.getElementById('list'), inp=document.getElementById('q'), hide=document.getElementById('hide');
   var html=groups.map(function(g,gi){return '<h2 class="grp" data-g="'+gi+'">'+esc(g.name)+'</h2>'+g.qs.map(function(q){
-    return '<div class="sq" data-g="'+gi+'" data-t="'+esc((plain(q.q)+' '+q.o.map(plain).join(' ')).toLowerCase())+'"><div class="content q2"><span class="num">'+q.n+'.</span> '+q.q+'</div><ul class="sopts">'+q.o.map(function(o,j){return '<li class="'+(q.a.indexOf(j)>=0?'right':'')+'"><b>'+L[j]+'.</b> <span class="content">'+o+'</span></li>'}).join('')+'</ul>'+(q.note?'<div class="note">ℹ '+esc(q.note)+'</div>':'')+'</div>'}).join('')}).join('');
+    return '<div class="sq'+(q.conflict?' hasc':'')+'" data-g="'+gi+'" data-t="'+esc((plain(q.q)+' '+q.o.map(plain).join(' ')).toLowerCase())+'"><div class="content q2"><span class="num">'+q.n+'.</span> '+q.q+'</div><ul class="sopts">'+q.o.map(function(o,j){return '<li class="'+(q.a.indexOf(j)>=0?'right':'')+'"><b>'+L[j]+'.</b> <span class="content">'+o+'</span></li>'}).join('')+'</ul><div class="sx">'+extras(q)+'</div></div>'}).join('')}).join('');
   list.innerHTML=html; wrapTables(list);
   var items=[].slice.call(list.querySelectorAll('.sq')), heads=[].slice.call(list.querySelectorAll('.grp'));
-  function filter(){var v=inp.value.trim().toLowerCase(),n=0,seen={};items.forEach(function(it){var s=!v||it.dataset.t.indexOf(v)>=0;it.hidden=!s;if(s){n++;seen[it.dataset.g]=1}});heads.forEach(function(h){h.hidden=!seen[h.dataset.g]});document.getElementById('cnt').textContent=v?'Rasta: '+n:''}
+  var onlyc=document.getElementById('onlyc');onlyc.onchange=function(){filter()};
+  function filter(){var v=inp.value.trim().toLowerCase(),n=0,seen={},oc=onlyc.checked;items.forEach(function(it){var s=(!v||it.dataset.t.indexOf(v)>=0)&&(!oc||it.classList.contains('hasc'));it.hidden=!s;if(s){n++;seen[it.dataset.g]=1}});heads.forEach(function(h){h.hidden=!seen[h.dataset.g]});document.getElementById('cnt').textContent=(v||oc)?'Rasta: '+n:''}
   var tmo;inp.oninput=function(){clearTimeout(tmo);tmo=setTimeout(filter,120)};
   hide.onchange=function(){list.classList.toggle('hideans',hide.checked)};
   list.addEventListener('click',function(e){if(!list.classList.contains('hideans'))return;var sq=e.target.closest('.sq');if(sq)sq.classList.toggle('reveal')});
@@ -199,7 +201,7 @@ function modulePage(i){
   '<div class="row" style="margin-bottom:12px"><button class="btn ghost sm" id="openall">Išskleisti visas</button><button class="btn ghost sm" id="ansall">Rodyti visus atsakymus</button>'+(D.modules[i+1]?'<a class="btn ghost sm" href="#/uzduotys/'+(i+1)+'">Kitas modulis →</a>':'')+'</div>'+
   m.tasks.map(function(t){var k=i+':'+t.n;return '<details class="task'+(done[k]?' done':'')+'" data-k="'+k+'" id="u'+t.n+'"><summary><span class="n">'+(done[k]?'✓':t.n)+'</span><span>'+esc(t.title)+'</span></summary><div class="body"><div class="content">'+t.q+'</div>'+
   '<div class="row" style="margin-top:14px">'+(t.a?'<button class="btn ghost showans">Rodyti atsakymą</button>':'<span class="stat">Šios užduoties atsakymo sąsiuvinyje nėra, pasitikrink su mokytoju.</span>')+'<label class="chk"><input type="checkbox" class="dn"'+(done[k]?' checked':'')+'> Atlikta</label></div>'+
-  (t.a?'<div class="ans" hidden><h4>Atsakymas</h4><div class="content">'+t.a+'</div></div>':'')+'</div></details>'}).join('');
+  (t.a?'<div class="ans" hidden><h4>Atsakymas'+(t.extra?' <span class="chip">parengta papildomai, sąsiuvinyje atsakymo nėra</span>':'')+'</h4><div class="content">'+t.a+'</div></div>':'')+'</div></details>'}).join('');
   wrapTables(app);
   function toggleAns(b,show){var a=b.closest('.body').querySelector('.ans');a.hidden=show===undefined?!a.hidden:!show;b.textContent=a.hidden?'Rodyti atsakymą':'Slėpti atsakymą'}
   app.querySelectorAll('.showans').forEach(function(b){b.onclick=function(){toggleAns(b)}});

@@ -8,7 +8,8 @@ Egzamino pasiruošimo puslapis ŠVOK (šildymo, vėdinimo, oro kondicionavimo) s
 - Egzamino simuliacija (10/20/30/50 klausimų su laikmačiu) ir testai pagal temas
 - „Mano klaidos“, pažymėti klausimai ☆, nebaigto testo tęsimas
 - „Mokytis“: visi klausimai su atsakymais ir paieška
-- 46 praktinės užduotys pagal modulius su atsakymais
+- 46 praktinės užduotys pagal modulius su atsakymais (7 trūkstami atsakymai parengti papildomai)
+- Prie klausimų: paaiškinimai „Kodėl?“, šaltinių nuorodos (sąsiuvinis, STR, LST EN, gamintojų dokumentacija) ir ⚠ žymė, kur sąsiuvinio atsakymas patikslintas pagal realius reikalavimus (`tools/overrides.py`)
 - Tamsi/šviesi tema, klaviatūros valdymas (A–F, Enter), paveikslėlių didinimas
 
 Medžiaga paimta iš „Šildymo, vėdinimo, oro kondicionavimo sistemų montuotojo modulinės profesinio mokymo programos (III lygis) teorinių ir praktinių užduočių mokinio sąsiuvinio“.
