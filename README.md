@@ -15,4 +15,4 @@ Medžiaga paimta iš „Šildymo, vėdinimo, oro kondicionavimo sistemų montuot
 
 Puslapis yra `site/` aplanke ir automatiškai publikuojamas per GitHub Actions (GitHub Pages). `tools/build.py` sugeneruoja `site/data.js` ir `site/img/` iš sąsiuvinio (.docx, konvertuoto su pandoc į HTML).
 
-Sukūrė [Nusikales](https://github.com/nusikales).
+
