@@ -4,10 +4,12 @@ Egzamino pasiruošimo puslapis ŠVOK (šildymo, vėdinimo, oro kondicionavimo) s
 
 **Puslapis:** https://nusikales.github.io/Svok-testai/
 
-- Pradinis testas (12 klausimų) ir baigiamasis testas (109 klausimai) su atsakymų tikrinimu
-- Egzamino simuliacija: 30 atsitiktinių klausimų
-- „Mano klaidos“: kartojami klausimai, kuriuose suklydai
-- 48 praktinės užduotys pagal modulius su atsakymais
+- Pradinis (12), baigiamasis (109) ir du modulių testai (18 ir 25 klausimų) su atsakymų tikrinimu
+- Egzamino simuliacija (10/20/30/50 klausimų su laikmačiu) ir testai pagal temas
+- „Mano klaidos“, pažymėti klausimai ☆, nebaigto testo tęsimas
+- „Mokytis“: visi klausimai su atsakymais ir paieška
+- 46 praktinės užduotys pagal modulius su atsakymais
+- Tamsi/šviesi tema, klaviatūros valdymas (A–F, Enter), paveikslėlių didinimas
 
 Medžiaga paimta iš „Šildymo, vėdinimo, oro kondicionavimo sistemų montuotojo modulinės profesinio mokymo programos (III lygis) teorinių ir praktinių užduočių mokinio sąsiuvinio“.
 

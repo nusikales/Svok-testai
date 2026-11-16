@@ -52,6 +52,9 @@ for ol in s.find_all('ol'):
         for li in ol.find_all('li',recursive=False): cur['o'].append(txt(li))
 prekey={1:'A',4:'E',7:'A',10:'F',2:'B',5:'D',8:'A',11:'C',3:'B',6:'A',9:'E',12:'A,B,C'}
 for i,q in enumerate(pre,1): q['a']=[ord(x.strip())-65 for x in prekey[i].split(',')]
+# Source key for pre-test Q11 says only C, but final-test Q105 lists all four uses as correct.
+pre[10]['a']=[0,1,2,3]
+pre[10]['note']='Sąsiuvinio atsakymų lape nurodytas tik C, tačiau baigiamojo testo 105 klausime teisingos visos keturios paskirtys, todėl čia įskaitomi visi variantai.'
 
 # ---- final test
 a=h.find('BAIGUS PROGRAM'); b=h.find('Atsakymai',a)
@@ -68,8 +71,19 @@ for tbl in s.find_all('table'):
         if lis: items=lis
         else: items=[p for p in c.find_all('p') if txt(p) or p.find('img')]
         has_img=bool(c.find('img'))
+        # merge paragraphs that continue the previous option (no "A." / "1." prefix)
+        if not lis and any(re.match(r'^\s*[A-F]\.\s',txt(p)) for p in items):
+            groups=[]
+            for p in items:
+                if re.match(r'^\s*[A-F]\.\s',txt(p)) or not groups: groups.append([p])
+                else: groups[-1].append(p)
+            items=groups
+        else: items=[[p] for p in items]
         opts=[]
-        for it in items:
+        for grp in items:
+            if has_img: opts.append(''.join(clean(str(it)) for it in grp)); continue
+            opts.append(strip_prefix(' '.join(txt(it) for it in grp)).replace('Sriegto strypą','Sriegtą strypą'))
+        for it in []:
             if has_img: opts.append(clean(str(it)))
             else: opts.append(strip_prefix(txt(it)))
         qh=clean(td[1].decode_contents())
@@ -138,6 +152,54 @@ for mn in wmods:
     modules.append({'name':mn,'tasks':tasks})
     print(mn,len(tasks),sum(1 for t in tasks if t['a']),file=sys.stderr)
 missing=[k for k in at if k not in wt]; print('ans w/o task',missing,file=sys.stderr)
-data={'pre':pre,'fin':fin,'modules':modules}
+# ---- module tests embedded as tasks: turn them into quizzes
+def parse_rows(frag):
+    s=BeautifulSoup(frag,'html.parser'); out=[]
+    for tbl in s.find_all('table'):
+        if tbl.find_parent('table'): continue
+        body=tbl.find('tbody') or tbl
+        for tr in body.find_all('tr',recursive=False):
+            td=tr.find_all(['td','th'],recursive=False)
+            if len(td)<3 or not txt(td[0]).isdigit(): continue
+            lis=td[2].find_all('li')
+            if not lis: continue
+            out.append({'n':int(txt(td[0])),'q':txt(td[1]),'o':[strip_prefix(txt(li)) for li in lis]})
+    return out
+def parse_key(frag):
+    s=BeautifulSoup(frag,'html.parser'); key={}
+    for tr in s.find_all('tr'):
+        c=[txt(x) for x in tr.find_all(['td','th'])]
+        for k in range(0,len(c)-1,2):
+            if c[k].isdigit(): key[int(c[k])]=[ord(x)-65 for x in re.findall(r'[A-F]',c[k+1])]
+    return key
+mtests=[]
+for m in modules:
+    for t in list(m['tasks']):
+        if 'testas' in t['title'].lower() and t['a']:
+            rows=parse_rows(t['q']); key=parse_key(t['a'])
+            for r in rows: r['a']=key[r['n']]
+            if 'vandens tiekimo' in t['title']:
+                # Source key for Q2-Q4 contradicts the final test (Q1-Q3) and the theory; corrected here.
+                fixes={2:[0],3:[2],4:[1]}
+                for r in rows:
+                    if r['n'] in fixes:
+                        old=', '.join('ABCDEF'[i] for i in r['a']); r['a']=fixes[r['n']]
+                        r['note']='Sąsiuvinio atsakymų lape čia nurodyta '+old+', bet tai prieštarauja baigiamajam testui ir teorijai, todėl atsakymas pataisytas.'
+            bad=[r['n'] for r in rows if not r['a'] or max(r['a'])>=len(r['o'])]
+            print('module test',t['title'],len(rows),'bad',bad,file=sys.stderr)
+            mtests.append({'name':re.sub(r'^Žinių patikrinimo testas\s*–\s*','',t['title']),'qs':rows})
+            m['tasks'].remove(t)
+# cross-check identical questions between module tests and the final test
+def norm(x): return re.sub(r'[^a-ząčęėįšųūž0-9]','',x.lower())
+F={}
+for q in fin:
+    F[norm(re.sub('<[^>]+>','',q['q']))]=q
+for mt in mtests:
+    for r in mt['qs']:
+        f=F.get(norm(r['q']))
+        if f and not f.get('html'):
+            ra=sorted(norm(r['o'][i]) for i in r['a']); fa=sorted(norm(f['o'][i]) for i in f['a'] if i<len(f['o']))
+            if ra!=fa: print('MISMATCH',mt['name'][:20],r['n'],'fin',f['n'],r['q'][:60],[r['o'][i] for i in r['a']],[f['o'][i] for i in f['a']],file=sys.stderr)
+data={'pre':pre,'fin':fin,'modules':modules,'mtests':mtests}
 open(OUT+'/data.js','w').write('window.SVOK='+json.dumps(data,ensure_ascii=False)+';\n')
 print('imgs',len(used),file=sys.stderr)
