@@ -1,6 +1,7 @@
 (function(){
 'use strict';
 var D=window.SVOK, app=document.getElementById('app'), L='ABCDEFGH';
+if(!D){app.innerHTML='<p>Nepavyko įkelti duomenų. Perkrauk puslapį.</p>';return}
 function store(k,v){try{if(v===undefined){return JSON.parse(localStorage.getItem('svok_'+k)||'null')}localStorage.setItem('svok_'+k,JSON.stringify(v))}catch(e){return null}}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}

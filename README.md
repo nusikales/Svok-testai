@@ -2,7 +2,7 @@
 
 Egzamino pasiruošimo puslapis ŠVOK (šildymo, vėdinimo, oro kondicionavimo) sistemų montuotojams (III lygis).
 
-**Puslapis:** https://nusikales.github.io/svok-testai/
+**Puslapis:** https://nusikales.github.io/Svok-testai/
 
 - Pradinis testas (12 klausimų) ir baigiamasis testas (109 klausimai) su atsakymų tikrinimu
 - Egzamino simuliacija: 30 atsitiktinių klausimų
